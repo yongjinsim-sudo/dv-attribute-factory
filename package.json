@@ -1,0 +1,88 @@
+{
+  "name": "dv-attribute-factory",
+  "displayName": "DV Attribute Factory",
+  "description": "Bulk-create Dataverse columns from definitions with preview-first validation and execution reporting.",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.120.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "license": "MIT",
+  "activationEvents": [
+    "onCommand:dvAttributeFactory.openAttributeFactory"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "dvAttributeFactory.openAttributeFactory",
+        "title": "DV Attribute Factory: Open Attribute Factory"
+      }
+    ],
+    "configuration": {
+      "title": "DV Attribute Factory",
+      "properties": {
+        "dvForgeLab.environments": {
+          "type": "array",
+          "default": [],
+          "description": "Shared Dataverse environments available to DV ForgeLab utilities.",
+          "items": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": { "type": "string", "description": "Environment label, for example DEV or SIT." },
+              "url": { "type": "string", "description": "Dataverse environment URL, for example https://org.crm6.dynamics.com." },
+              "tenantId": { "type": "string", "description": "Optional tenant ID for Azure CLI token acquisition." }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.120.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.56.1",
+    "eslint": "^9.39.3",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  },
+  "keywords": [
+    "dataverse",
+    "power platform",
+    "dynamics 365",
+    "attributes",
+    "columns",
+    "metadata",
+    "bulk create",
+    "vscode",
+    "dvforgelab",
+    "powerapps",
+    "power apps",
+    "crm",
+    "model driven app",
+    "microsoft dataverse"
+  ],
+  "publisher": "dv-forgelab",
+  "icon": "images/dv-utilities-icon-128.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yongjinsim-sudo/dv-attribute-factory"
+  },
+  "bugs": {
+    "url": "https://github.com/yongjinsim-sudo/dv-attribute-factory/issues"
+  },
+  "homepage": "https://github.com/yongjinsim-sudo/dv-attribute-factory"
+}
