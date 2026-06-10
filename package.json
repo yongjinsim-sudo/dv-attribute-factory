@@ -1,8 +1,8 @@
 {
   "name": "dv-attribute-factory",
   "displayName": "DV Attribute Factory",
-  "description": "Bulk-create Dataverse columns from definitions with preview-first validation and execution reporting.",
-  "version": "0.1.0",
+  "description": "Bulk-create Dataverse columns from CSV or JSON definitions with preview-first validation and execution reporting.",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.120.0"
   },
@@ -30,11 +30,23 @@
           "description": "Shared Dataverse environments available to DV ForgeLab utilities.",
           "items": {
             "type": "object",
-            "required": ["name", "url"],
+            "required": [
+              "name",
+              "url"
+            ],
             "properties": {
-              "name": { "type": "string", "description": "Environment label, for example DEV or SIT." },
-              "url": { "type": "string", "description": "Dataverse environment URL, for example https://org.crm6.dynamics.com." },
-              "tenantId": { "type": "string", "description": "Optional tenant ID for Azure CLI token acquisition." }
+              "name": {
+                "type": "string",
+                "description": "Environment label, for example DEV or SIT."
+              },
+              "url": {
+                "type": "string",
+                "description": "Dataverse environment URL, for example https://org.crm6.dynamics.com."
+              },
+              "tenantId": {
+                "type": "string",
+                "description": "Optional tenant ID for Azure CLI token acquisition."
+              }
             }
           }
         }
@@ -73,7 +85,13 @@
     "power apps",
     "crm",
     "model driven app",
-    "microsoft dataverse"
+    "microsoft dataverse",
+    "attribute factory",
+    "column factory",
+    "csv import",
+    "json import",
+    "preview first",
+    "metadata creation"
   ],
   "publisher": "dv-forgelab",
   "icon": "images/dv-utilities-icon-128.png",
@@ -84,5 +102,6 @@
   "bugs": {
     "url": "https://github.com/yongjinsim-sudo/dv-attribute-factory/issues"
   },
-  "homepage": "https://github.com/yongjinsim-sudo/dv-attribute-factory"
+  "homepage": "https://github.com/yongjinsim-sudo/dv-attribute-factory",
+  "preview": false
 }
