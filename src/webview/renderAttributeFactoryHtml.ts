@@ -216,6 +216,9 @@ export function renderAttributeFactoryHtml(viewModel: AttributeFactoryViewModel,
 		${renderPreview(viewModel)}
 		${renderResults(viewModel)}
 		<section class="dv-card dv-section"><h2>Boundary</h2><p>Factory, not manager. DV Attribute Factory creates new columns from staged definitions. It does not modify existing columns, delete columns, migrate data, update forms/views, or perform dependency analysis.</p></section>
-		<footer class="dv-footer-note">DV Attribute Factory is a DV ForgeLab utility. <a href="https://marketplace.visualstudio.com/items?itemName=dv-forgelab.dv-quick-run">DV Quick Run</a> remains the flagship Dataverse investigation workbench.</footer>
+		<footer class="dv-footer-note">
+			DV Identity Manager is part of the <a href="https://www.dvforgelab.com">DV ForgeLab</a> Dataverse tooling ecosystem.
+			<a href="https://www.dvquickrun.com">DV Quick Run</a> is the flagship Dataverse investigation workbench.
+		</footer>
 	</div><script>${attributeFactoryScript}</script></body></html>`;
 }

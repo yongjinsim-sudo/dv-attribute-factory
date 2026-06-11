@@ -149,12 +149,20 @@ Create Attributes
 
 DV Quick Run remains responsible for observing and reporting metadata drift. DV Attribute Factory remains responsible for preview-first metadata creation.
 
-## Built By
+## Part of the DV ForgeLab Family
 
-Built by **DV ForgeLab**.
+DV Attribute Factory is a focused Dataverse utility from DV ForgeLab.
 
-**DV Quick Run** remains the flagship Dataverse investigation workbench.
+For operational investigation, execution, runtime analysis, and cross-environment comparison, see [DV Quick Run](https://www.dvquickrun.com).
 
-VS Code Marketplace:
+DV Attribute Factory follows the same principles:
 
-https://marketplace.visualstudio.com/items?itemName=dv-forgelab.dv-quick-run
+* Preview-first
+* Environment-aware
+* Metadata-backed
+* Explicit execution
+* Calm operational UX
+
+---
+
+Built by **[DV ForgeLab](https://www.dvforgelab.com)**.

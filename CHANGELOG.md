@@ -2,6 +2,15 @@
 
 All notable changes to the "DV Attribute Factory" extension will be documented in this file.
 
+## [1.0.1] - Documentation & Branding Refresh
+
+### Changed
+
+- Added DV ForgeLab website links across documentation.
+- Updated footer links to point to dvforgelab.com and dvquickrun.com.
+- Refreshed README screenshots and workflow documentation.
+- Improved product ecosystem references.
+
 ## [1.0.0] - Preview-First Column Creation
 
 ### Added
