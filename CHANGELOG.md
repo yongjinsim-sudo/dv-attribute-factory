@@ -2,6 +2,34 @@
 
 All notable changes to the "DV Attribute Factory" extension will be documented in this file.
 
+## [1.0.2] - Feedback Integration & Ecosystem Connectivity
+
+### Added
+
+* Added in-product Feedback action.
+* Feedback now opens the DV ForgeLab feedback portal directly from DV Attribute Factory.
+* Feedback links support product-aware routing using the shared DV ForgeLab feedback workflow.
+* Feedback submissions automatically identify DV Attribute Factory as the source product.
+* Feedback submissions now include extension version information to improve support and issue investigation.
+
+### Changed
+
+* Improved DV ForgeLab ecosystem connectivity.
+* Strengthened product continuity between DV Attribute Factory and the broader DV ForgeLab utility family.
+* Refined utility footer and ecosystem navigation references.
+
+### Ecosystem
+
+DV Attribute Factory now participates in the shared DV ForgeLab feedback experience alongside:
+
+* DV Quick Run
+* DV Bulk Upsert Runner
+* DV Choice Editor
+* DV Environment Variable Manager
+* DV Identity Manager
+
+This enables product-specific feedback collection while preserving a single feedback destination and support workflow.
+
 ## [1.0.1] - Documentation & Branding Refresh
 
 ### Changed

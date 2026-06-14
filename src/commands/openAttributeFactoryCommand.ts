@@ -10,6 +10,7 @@ import { renderAttributeFactoryHtml } from '../webview/renderAttributeFactoryHtm
 
 const panelTitle = 'DV Attribute Factory';
 const commandName = 'DV Attribute Factory';
+const feedbackUrl = 'https://dvforgelab.com/feedback?product=dvaf&version=1.0.1';
 
 type WebviewMessage = {
 	command?: string;
@@ -457,6 +458,9 @@ async function importJsonFromFile(): Promise<void> {
 					break;
 				case 'applyAndPublish':
 					await applyAndPublish();
+					break;
+				case 'openFeedback':
+					await vscode.env.openExternal(vscode.Uri.parse(feedbackUrl));
 					break;
 				case 'clearDrafts':
 					state.drafts = [];

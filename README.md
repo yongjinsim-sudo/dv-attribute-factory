@@ -18,6 +18,7 @@ Bulk-create Dataverse columns inside VS Code.
 - Validation before Dataverse mutation
 - Execution reporting with Created, Skipped, and Failed outcomes
 - Shared DV ForgeLab Dataverse environment settings
+- Direct DV ForgeLab feedback integration
 
 ## Screenshot
 
@@ -120,6 +121,22 @@ It does not:
 ```text
 DV Attribute Factory: Open Attribute Factory
 ```
+
+## Feedback
+
+DV Attribute Factory includes direct integration with the DV ForgeLab feedback portal.
+
+Share:
+
+* Feature requests
+* Bug reports
+* Metadata reconstruction scenarios
+* Workflow suggestions
+* Product feedback
+
+Feedback is routed through the shared DV ForgeLab feedback experience and automatically identifies DV Attribute Factory as the source product.
+
+https://www.dvforgelab.com/feedback
 
 ## Philosophy
 

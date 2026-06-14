@@ -198,6 +198,7 @@ export function renderAttributeFactoryHtml(viewModel: AttributeFactoryViewModel,
 				<button data-command="connect">Connect</button>
 				<button class="secondary" data-command="switchEnvironment">Change environment</button>
 				<button class="secondary" data-command="validate">Refresh</button>
+				<button class="secondary" data-command="openFeedback">Feedback</button>
 			</div>
 		</section>
 		${messageHtml}
@@ -217,7 +218,7 @@ export function renderAttributeFactoryHtml(viewModel: AttributeFactoryViewModel,
 		${renderResults(viewModel)}
 		<section class="dv-card dv-section"><h2>Boundary</h2><p>Factory, not manager. DV Attribute Factory creates new columns from staged definitions. It does not modify existing columns, delete columns, migrate data, update forms/views, or perform dependency analysis.</p></section>
 		<footer class="dv-footer-note">
-			DV Identity Manager is part of the <a href="https://www.dvforgelab.com">DV ForgeLab</a> Dataverse tooling ecosystem.
+			DV Attribute Factory is part of the <a href="https://www.dvforgelab.com">DV ForgeLab</a> Dataverse tooling ecosystem.
 			<a href="https://www.dvquickrun.com">DV Quick Run</a> is the flagship Dataverse investigation workbench.
 		</footer>
 	</div><script>${attributeFactoryScript}</script></body></html>`;
