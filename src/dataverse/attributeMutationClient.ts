@@ -22,6 +22,24 @@ function buildPublishXml(entityLogicalName: string): string {
 	return `<importexportxml><entities><entity>${entityLogicalName}</entity></entities></importexportxml>`;
 }
 
+function sanitiseSchemaPart(value: string | undefined): string {
+	return (value ?? '')
+		.trim()
+		.replace(/[^A-Za-z0-9_]/g, '_')
+		.replace(/_+/g, '_')
+		.replace(/^_+|_+$/g, '') || 'Lookup';
+}
+
+function buildRelationshipSchemaName(draft: AttributeDefinitionDraft): string {
+	if (draft.relationshipSchemaName?.trim()) {
+		return draft.relationshipSchemaName.trim();
+	}
+	const lookupSchema = sanitiseSchemaPart(draft.schemaName);
+	const target = sanitiseSchemaPart(draft.lookupTarget);
+	const source = sanitiseSchemaPart(draft.tableLogicalName);
+	return `${target}_${source}_${lookupSchema}`;
+}
+
 function parseChoiceValues(input: string | undefined): Array<{ label: string; value?: number }> {
 	return (input ?? '')
 		.split(/\r?\n|;/)
@@ -77,14 +95,32 @@ function buildAttributeMetadata(draft: AttributeDefinitionDraft): Record<string,
 				}
 			};
 		case 'Lookup':
-			return {
-				...common,
-				'@odata.type': 'Microsoft.Dynamics.CRM.LookupAttributeMetadata',
-				Targets: [draft.lookupTarget?.trim()].filter(Boolean)
-			};
+			throw new Error('Lookup columns must be created through relationship metadata, not direct attribute metadata.');
 		default:
 			return common;
 	}
+}
+
+
+function buildLookupRelationshipMetadata(draft: AttributeDefinitionDraft): Record<string, unknown> {
+	const lookupTarget = draft.lookupTarget?.trim();
+	if (!lookupTarget) {
+		throw new Error('Lookup target table is required before creating relationship metadata.');
+	}
+
+	return {
+		'@odata.type': 'Microsoft.Dynamics.CRM.OneToManyRelationshipMetadata',
+		SchemaName: buildRelationshipSchemaName(draft),
+		ReferencedEntity: lookupTarget,
+		ReferencingEntity: draft.tableLogicalName.trim(),
+		Lookup: {
+			'@odata.type': 'Microsoft.Dynamics.CRM.LookupAttributeMetadata',
+			SchemaName: draft.schemaName.trim(),
+			DisplayName: buildLabel(draft.displayName.trim()),
+			Description: buildLabel(draft.description?.trim() || draft.displayName.trim()),
+			RequiredLevel: buildRequirementLevel(draft.required)
+		}
+	};
 }
 
 export class AttributeMutationClient {
@@ -97,13 +133,19 @@ export class AttributeMutationClient {
 		const results: ExecutionResult[] = [];
 		for (const draft of drafts) {
 			try {
-				if (await this.metadataClient.attributeExists(draft.tableLogicalName, draft.schemaName)) {
+				const attributeLogicalName = (draft.logicalName || draft.schemaName).trim();
+				if (await this.metadataClient.attributeExists(draft.tableLogicalName, attributeLogicalName)) {
 					results.push({ draftId: draft.id, schemaName: draft.schemaName, status: 'Skipped', message: 'Column already exists.' });
 					continue;
 				}
 
-				await this.client.post(`/EntityDefinitions(LogicalName='${draft.tableLogicalName}')/Attributes`, buildAttributeMetadata(draft));
-				results.push({ draftId: draft.id, schemaName: draft.schemaName, status: 'Created', message: 'Column created.' });
+				if (draft.type === 'Lookup') {
+					await this.client.post('/RelationshipDefinitions', buildLookupRelationshipMetadata(draft));
+					results.push({ draftId: draft.id, schemaName: draft.schemaName, status: 'Created', message: 'Lookup relationship and column created.' });
+				} else {
+					await this.client.post(`/EntityDefinitions(LogicalName='${draft.tableLogicalName}')/Attributes`, buildAttributeMetadata(draft));
+					results.push({ draftId: draft.id, schemaName: draft.schemaName, status: 'Created', message: 'Column created.' });
+				}
 			} catch (error) {
 				results.push({ draftId: draft.id, schemaName: draft.schemaName, status: 'Failed', message: error instanceof Error ? error.message : String(error) });
 			}

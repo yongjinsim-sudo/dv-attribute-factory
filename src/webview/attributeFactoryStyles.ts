@@ -335,4 +335,9 @@ textarea { min-height: 54px; resize: vertical; }
 	min-height: 220px;
 }
 
+
+.dv-source-note { border: 1px solid rgba(92, 179, 255, 0.28); background: rgba(92, 179, 255, 0.08); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.dv-source-note strong { color: var(--dv-text); font-size: 12px; }
+.dv-source-note span, .dv-source-note em { color: var(--dv-muted); font-size: 12px; }
+
 `;

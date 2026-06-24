@@ -27,10 +27,14 @@ export type AttributeDataType =
 
 export type RequirementLevel = 'None' | 'Recommended' | 'Required';
 
+export type AttributeDefinitionOrigin = 'Manual' | 'FlatImport' | 'DvqrRich';
+
 export type AttributeDefinitionDraft = {
 	id: string;
 	tableLogicalName: string;
 	displayName: string;
+	/** Dataverse logical name used for metadata existence checks. For new custom columns this is usually schemaName lower-cased; DVQR-rich imports may provide the exact logical name. */
+	logicalName?: string;
 	schemaName: string;
 	type: AttributeDataType;
 	required: RequirementLevel;
@@ -39,6 +43,17 @@ export type AttributeDefinitionDraft = {
 	precision?: number;
 	choiceValues?: string;
 	lookupTarget?: string;
+	relationshipSchemaName?: string;
+	origin?: AttributeDefinitionOrigin;
+	sourceIsValidForCreate?: boolean;
+	sourceIsValidForUpdate?: boolean;
+	sourceAttributeOf?: string;
+	sourceProviderId?: string;
+	sourceFindingId?: string;
+	sourceReason?: string;
+	sourceEnvironmentLabel?: string;
+	targetEnvironmentLabel?: string;
+	reconstructionSupportLevel?: string;
 };
 
 export type ValidationIssue = {
@@ -48,7 +63,7 @@ export type ValidationIssue = {
 };
 
 export type PendingAttributeChange = {
-	kind: 'CreateAttribute';
+	kind: 'CreateAttribute' | 'CreateLookupRelationship';
 	draft: AttributeDefinitionDraft;
 	issues: ValidationIssue[];
 };

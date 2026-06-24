@@ -2,6 +2,33 @@
 
 All notable changes to the "DV Attribute Factory" extension will be documented in this file.
 
+## [1.1.0] - DVQR Reconstruction Artifact Import & Lookup Support
+
+### Added
+
+* Added support for DV Quick Run rich `.dvaf.json` reconstruction artifacts.
+* Added source-side reconstruction import from `artifactKind: dvqr-dvaf-attribute-reconstruction`.
+* Added lookup column validation and preview support for DVQR-rich imports when target metadata is available.
+* Added DVQR source context on imported rows, including source/target environment labels, provider id, finding id, reconstruction reason, and support level.
+* Added safeguards for DVQR rows marked `isValidForCreate: false`; these rows are preserved for review but blocked from execution.
+
+### Changed
+
+* Lookup columns are no longer globally treated as unsupported.
+* Flat CSV/JSON lookup definitions remain review-only unless sufficient DVQR-rich metadata is provided.
+* Preview wording now distinguishes standard attribute creation from lookup reconstruction.
+* Feedback links now identify DVAF v1.1.0.
+* Added relationship-based lookup creation using Dataverse RelationshipDefinitions for DVQR-rich lookup imports.
+* Added DVQR-rich Choice/Picklist reconstruction support, including imported option values.
+* Preserved global choice source metadata while reconstructing choices as local choice columns in v1.1.0.
+* Removed automatic connection on open; DVAF now connects only when the user selects Connect.
+
+### Boundary
+
+DV Attribute Factory validates, previews, and creates supported metadata from DVQR reconstruction intent. DV Quick Run investigates and exports reconstruction artifacts; DVAF owns preview/apply; humans retain operational authority.
+
+Global choice lifecycle management remains outside DVAF v1.1.0 and belongs to DV Choice Editor. DVAF may reconstruct a choice column from captured options, but it does not recreate or manage global choice definitions.
+
 ## [1.0.2] - Feedback Integration & Ecosystem Connectivity
 
 ### Added

@@ -6,6 +6,10 @@ function normalise(value: string): string {
 	return value.trim().toLowerCase();
 }
 
+function isLookupSupportedByDvqrRichImport(draft: AttributeDefinitionDraft): boolean {
+	return draft.type === 'Lookup' && draft.origin === 'DvqrRich';
+}
+
 export function validateDrafts(drafts: AttributeDefinitionDraft[], entities: EntityViewModel[], existingAttributeKeys: string[] = []): { issues: ValidationIssue[]; pendingChanges: PendingAttributeChange[] } {
 	const entityNames = new Set(entities.map(entity => normalise(entity.logicalName)));
 	const schemaNames = new Map<string, number>();
@@ -33,9 +37,10 @@ export function validateDrafts(drafts: AttributeDefinitionDraft[], entities: Ent
 		}
 
 		const key = `${normalise(table)}::${normalise(schema)}`;
+		const existingKey = `${normalise(table)}::${normalise(draft.logicalName || schema)}`;
 		schemaNames.set(key, (schemaNames.get(key) ?? 0) + 1);
 
-		if (table && schema && existingAttributes.has(key)) {
+		if (table && schema && existingAttributes.has(existingKey)) {
 			issues.push({ draftId: draft.id, severity: 'Warning', message: 'Column already exists and will be skipped.' });
 		}
 
@@ -49,8 +54,26 @@ export function validateDrafts(drafts: AttributeDefinitionDraft[], entities: Ent
 			issues.push({ draftId: draft.id, severity: 'Warning', message: 'Choice column has no choice values. The column can be created, but the choices should be reviewed.' });
 		}
 
+		if (draft.sourceIsValidForCreate === false) {
+			issues.push({ draftId: draft.id, severity: 'Error', message: 'DVQR source metadata says this column is not valid for create. Preserve for review, but do not execute.' });
+		}
+
+		if (draft.sourceAttributeOf?.trim()) {
+			issues.push({ draftId: draft.id, severity: 'Warning', message: `DVQR source metadata indicates this column is attributeOf ${draft.sourceAttributeOf}. Review carefully before creating.` });
+		}
+
 		if (draft.type === 'Lookup') {
-			issues.push({ draftId: draft.id, severity: 'Warning', message: 'Unsupported in v1.0.0: lookup columns require relationship creation.' });
+			if (!isLookupSupportedByDvqrRichImport(draft)) {
+				issues.push({ draftId: draft.id, severity: 'Warning', message: 'Lookup creation requires DVQR-rich .dvaf.json metadata in v1.1.0.' });
+			}
+			if (!draft.lookupTarget?.trim()) {
+				issues.push({ draftId: draft.id, severity: 'Error', message: 'Lookup target table is required.' });
+			} else if (entityNames.size && !entityNames.has(normalise(draft.lookupTarget))) {
+				issues.push({ draftId: draft.id, severity: 'Warning', message: `Lookup target ${draft.lookupTarget} was not found in the loaded entity list.` });
+			}
+			if (isLookupSupportedByDvqrRichImport(draft)) {
+				issues.push({ draftId: draft.id, severity: 'Warning', message: 'DVQR-rich lookup import: preview carefully because Dataverse may create relationship metadata.' });
+			}
 		}
 	}
 
@@ -62,12 +85,12 @@ export function validateDrafts(drafts: AttributeDefinitionDraft[], entities: Ent
 	}
 
 	const pendingChanges = drafts
-		.map(draft => ({
-			kind: 'CreateAttribute' as const,
+		.map((draft): PendingAttributeChange => ({
+			kind: draft.type === 'Lookup' ? 'CreateLookupRelationship' : 'CreateAttribute',
 			draft,
 			issues: issues.filter(issue => issue.draftId === draft.id)
 		}))
-		.filter(change => !change.issues.some(issue => issue.severity === 'Error' || issue.message.includes('already exists') || issue.message.includes('Unsupported in v1.0.0')));
+		.filter(change => !change.issues.some(issue => issue.severity === 'Error' || issue.message.includes('already exists') || issue.message.includes('requires DVQR-rich')));
 
 	return { issues, pendingChanges };
 }

@@ -17,7 +17,7 @@ function input(draft: AttributeDefinitionDraft, field: keyof AttributeDefinition
 }
 
 function getOptionLabel(value: string): string {
-	return value === 'Lookup' ? 'Lookup (planned)' : value;
+	return value === 'Lookup' ? 'Lookup' : value;
 }
 
 function select(draft: AttributeDefinitionDraft, field: keyof AttributeDefinitionDraft, values: string[], selected: string): string {
@@ -96,7 +96,7 @@ function formatTypeSummary(draft: AttributeDefinitionDraft): string {
 		return count ? `Choice • ${count} value(s)` : 'Choice';
 	}
 	if (draft.type === 'Lookup') {
-		return draft.lookupTarget ? `Lookup → ${draft.lookupTarget} (planned)` : 'Lookup (planned)';
+		return draft.lookupTarget ? `Lookup → ${draft.lookupTarget}` : 'Lookup';
 	}
 	return draft.type;
 }
@@ -117,7 +117,10 @@ function renderDraftRow(draft: AttributeDefinitionDraft, viewModel: AttributeFac
 		? `<label><span>Choice values</span><button type="button" class="secondary" data-command="editChoiceValues" data-id="${escapeHtml(draft.id)}" data-value="${escapeHtml(draft.choiceValues ?? '')}">Edit choice values${choiceValueCount ? ` (${choiceValueCount})` : ''}</button><em>Use Label|Value pairs separated by semicolons or new lines.</em></label>`
 		: '';
 	const lookupHtml = draft.type === 'Lookup'
-		? `<label><span>Lookup target</span>${input(draft, 'lookupTarget', draft.lookupTarget ?? '', 'list="dvaf-entities" placeholder="contact"')}<em>Unsupported in v1.0.0: lookup columns require relationship creation.</em></label>`
+		? `<label><span>Lookup target</span>${input(draft, 'lookupTarget', draft.lookupTarget ?? '', 'list="dvaf-entities" placeholder="contact"')}<em>Lookup creation is supported for DVQR-rich .dvaf.json imports when target metadata is available. Flat CSV/JSON lookups remain review-only.</em></label>`
+		: '';
+	const sourceHtml = draft.origin === 'DvqrRich'
+		? `<div class="dv-source-note span-2"><strong>DVQR reconstruction import</strong><span>${escapeHtml(draft.sourceReason || 'Source-side reconstruction intent')} • ${escapeHtml(draft.reconstructionSupportLevel || 'Review')}</span><em>DVQR investigates and exports reconstruction intent. DVAF validates, previews, and creates supported metadata.</em></div>`
 		: '';
 	return `<div class="dv-draft-card">
 		<div class="dv-draft-card-header">
@@ -134,10 +137,23 @@ function renderDraftRow(draft: AttributeDefinitionDraft, viewModel: AttributeFac
 			${precisionHtml}
 			${lookupHtml}
 			${choiceHtml}
+			${sourceHtml}
 			<label class="span-2"><span>Description</span><textarea class="dv-description" data-command="updateDraft" data-id="${escapeHtml(draft.id)}" data-field="description">${escapeHtml(draft.description ?? '')}</textarea></label>
 		</div>
 	</div>`;
 }
+function formatMutationSummary(viewModel: AttributeFactoryViewModel): string {
+	const hasLookup = viewModel.pendingChanges.some(change => change.kind === 'CreateLookupRelationship');
+	const hasAttribute = viewModel.pendingChanges.some(change => change.kind === 'CreateAttribute');
+	if (hasLookup && hasAttribute) {
+		return 'CreateAttribute + CreateRelationship + PublishXml';
+	}
+	if (hasLookup) {
+		return 'CreateRelationship / Lookup + PublishXml';
+	}
+	return 'CreateAttribute + PublishXml';
+}
+
 function renderPreview(viewModel: AttributeFactoryViewModel): string {
 	if (!viewModel.previewOpen) {
 		return '';
@@ -154,7 +170,7 @@ function renderPreview(viewModel: AttributeFactoryViewModel): string {
 		<div class="dv-preview-grid">
 			<div><span>Environment</span><strong>${escapeHtml(viewModel.environment.label)}</strong><em>${escapeHtml(viewModel.environment.safetyLabel)}</em></div>
 			<div><span>Pending creates</span><strong>${escapeHtml(viewModel.pendingChanges.length)}</strong><em>${escapeHtml(viewModel.summary.errorCount)} error(s), ${escapeHtml(viewModel.summary.warningCount)} warning(s)</em></div>
-			<div><span>Mutation</span><strong>CreateAttribute + PublishXml</strong><em>Only after explicit apply.</em></div>
+			<div><span>Mutation</span><strong>${escapeHtml(formatMutationSummary(viewModel))}</strong><em>Only after explicit apply.</em></div>
 		</div>
 		<div class="dv-list">
 			${viewModel.pendingChanges.map(change => `<div class="dv-operation"><div><strong>${escapeHtml(change.draft.tableLogicalName)}.${escapeHtml(change.draft.schemaName)}</strong><p>${escapeHtml(change.draft.displayName)} • ${escapeHtml(formatTypeSummary(change.draft))}</p></div><span class="dv-pill ${change.issues.some(issue => issue.severity === 'Error') ? 'danger' : change.issues.length ? 'warning' : 'success'}">${change.issues.length ? `${change.issues.length} issue(s)` : 'Ready'}</span></div>`).join('') || '<div class="dv-empty">No staged definitions.</div>'}
@@ -162,7 +178,7 @@ function renderPreview(viewModel: AttributeFactoryViewModel): string {
 		<div class="dv-preview-note">${escapeHtml(applyWarningText)}</div>
 		<div class="dv-actions" style="margin-top:12px">
 			<button class="secondary" data-command="cancelPreview">Cancel preview</button>
-			<button class="${applyButtonClass}" ${hasErrors || !viewModel.pendingChanges.length ? 'disabled' : ''} data-command="applyAndPublish">Create ${escapeHtml(viewModel.pendingChanges.length)} Attributes</button>
+			<button class="${applyButtonClass}" ${hasErrors || !viewModel.pendingChanges.length ? 'disabled' : ''} data-command="applyAndPublish">Create ${escapeHtml(viewModel.pendingChanges.length)} Definition(s)</button>
 		</div>
 	</section>`;
 }

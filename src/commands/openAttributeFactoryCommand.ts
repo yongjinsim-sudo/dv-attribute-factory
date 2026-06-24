@@ -10,7 +10,7 @@ import { renderAttributeFactoryHtml } from '../webview/renderAttributeFactoryHtm
 
 const panelTitle = 'DV Attribute Factory';
 const commandName = 'DV Attribute Factory';
-const feedbackUrl = 'https://dvforgelab.com/feedback?product=dvaf&version=1.0.1';
+const feedbackUrl = 'https://dvforgelab.com/feedback?product=dvaf&version=1.1.0';
 
 type WebviewMessage = {
 	command?: string;
@@ -22,6 +22,7 @@ function createDraft(partial: Partial<AttributeDefinitionDraft> = {}): Attribute
 		id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
 		tableLogicalName: String(partial.tableLogicalName ?? ''),
 		displayName: String(partial.displayName ?? ''),
+		logicalName: String(partial.logicalName ?? ''),
 		schemaName: String(partial.schemaName ?? ''),
 		type: (partial.type ?? 'Text') as AttributeDataType,
 		required: (partial.required ?? 'None') as RequirementLevel,
@@ -30,6 +31,17 @@ function createDraft(partial: Partial<AttributeDefinitionDraft> = {}): Attribute
 		precision: partial.precision ?? 2,
 		choiceValues: partial.choiceValues ?? '',
 		lookupTarget: partial.lookupTarget ?? '',
+		relationshipSchemaName: partial.relationshipSchemaName ?? '',
+		origin: partial.origin ?? 'Manual',
+		sourceIsValidForCreate: partial.sourceIsValidForCreate,
+		sourceIsValidForUpdate: partial.sourceIsValidForUpdate,
+		sourceAttributeOf: partial.sourceAttributeOf ?? '',
+		sourceProviderId: partial.sourceProviderId ?? '',
+		sourceFindingId: partial.sourceFindingId ?? '',
+		sourceReason: partial.sourceReason ?? '',
+		sourceEnvironmentLabel: partial.sourceEnvironmentLabel ?? '',
+		targetEnvironmentLabel: partial.targetEnvironmentLabel ?? '',
+		reconstructionSupportLevel: partial.reconstructionSupportLevel ?? '',
 	};
 }
 
@@ -79,7 +91,7 @@ function buildCsvContent(drafts: AttributeDefinitionDraft[]): string {
 
 
 function draftKey(draft: AttributeDefinitionDraft): string {
-	return `${draft.tableLogicalName.trim().toLowerCase()}::${draft.schemaName.trim().toLowerCase()}`;
+	return `${draft.tableLogicalName.trim().toLowerCase()}::${(draft.logicalName || draft.schemaName).trim().toLowerCase()}`;
 }
 
 function addImportedDrafts(existing: AttributeDefinitionDraft[], imported: AttributeDefinitionDraft[]): { added: number; updated: number; skipped: number } {
@@ -106,6 +118,130 @@ function addImportedDrafts(existing: AttributeDefinitionDraft[], imported: Attri
 	return { added, updated, skipped };
 }
 
+
+function asRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function toAttributeDataType(value: unknown): AttributeDataType {
+	const raw = normaliseString(value).toLowerCase();
+	switch (raw) {
+		case 'string':
+		case 'text':
+			return 'Text';
+		case 'memo':
+		case 'multilinetext':
+		case 'multiline text':
+			return 'MultilineText';
+		case 'integer':
+		case 'wholenumber':
+		case 'whole number':
+			return 'WholeNumber';
+		case 'decimal':
+			return 'Decimal';
+		case 'money':
+		case 'currency':
+			return 'Currency';
+		case 'datetime':
+		case 'dateandtime':
+		case 'date and time':
+			return 'DateTime';
+		case 'dateonly':
+		case 'date only':
+			return 'DateOnly';
+		case 'boolean':
+		case 'yesno':
+		case 'yes/no':
+			return 'YesNo';
+		case 'picklist':
+		case 'choice':
+			return 'Choice';
+		case 'lookup':
+		case 'customer':
+		case 'owner':
+			return 'Lookup';
+		default:
+			return (normaliseString(value) || 'Text') as AttributeDataType;
+	}
+}
+
+function normaliseRequired(value: unknown): RequirementLevel {
+	const raw = normaliseString(value).toLowerCase();
+	if (raw === 'applicationrequired' || raw === 'required') { return 'Required'; }
+	if (raw === 'recommended') { return 'Recommended'; }
+	return 'None';
+}
+
+function labelFromDefinition(definition: Record<string, unknown>, fallback: string): string {
+	const direct = normaliseString(definition.displayName ?? definition.DisplayName);
+	if (direct) { return direct; }
+	const label = asRecord(asRecord(asRecord(definition.DisplayName).UserLocalizedLabel).Label);
+	return normaliseString(label) || fallback;
+}
+
+function firstString(values: unknown[]): string {
+	for (const value of values) {
+		if (Array.isArray(value)) {
+			const nested = firstString(value);
+			if (nested) { return nested; }
+			continue;
+		}
+		const text = normaliseString(value);
+		if (text) { return text; }
+	}
+	return '';
+}
+
+function importDvqrRichJson(root: Record<string, unknown>): AttributeDefinitionDraft[] {
+	if (normaliseString(root.artifactKind) !== 'dvqr-dvaf-attribute-reconstruction' || normaliseString(root.templateKind) !== 'dvqr-rich-dvaf-json') {
+		return [];
+	}
+	const attributes = Array.isArray(root.attributes) ? root.attributes : [];
+	return attributes.map(entryValue => {
+		const entry = asRecord(entryValue);
+		const candidate = asRecord(entry.candidate);
+		const sourceDefinition = asRecord(entry.sourceDefinition);
+		const compatible = asRecord(entry.dvafCompatibleDefinition);
+		const lookupHint = asRecord(entry.lookupHint);
+		const support = asRecord(entry.reconstructionSupport);
+		const logicalName = normaliseString(sourceDefinition.logicalName ?? sourceDefinition.LogicalName ?? candidate.attributeLogicalName ?? compatible.schemaName);
+		const schemaName = normaliseString(sourceDefinition.schemaName ?? sourceDefinition.SchemaName ?? compatible.schemaName ?? logicalName);
+		const type = toAttributeDataType(sourceDefinition.attributeType ?? sourceDefinition.AttributeType ?? compatible.type);
+		const target = firstString([
+			lookupHint.targetEntityLogicalName,
+			lookupHint.targetTableLogicalName,
+			lookupHint.lookupTarget,
+			sourceDefinition.lookupTarget,
+			sourceDefinition.Targets,
+			compatible.lookupTarget
+		]);
+		return createDraft({
+			tableLogicalName: normaliseString(candidate.entityLogicalName ?? root.entityLogicalName ?? compatible.tableLogicalName),
+			displayName: normaliseString(sourceDefinition.displayName ?? compatible.displayName) || schemaName || logicalName,
+			logicalName,
+			schemaName: schemaName || logicalName,
+			type,
+			required: normaliseRequired(sourceDefinition.requiredLevel ?? compatible.required),
+			description: normaliseString(sourceDefinition.description ?? compatible.description),
+			maxLength: parseNumber(sourceDefinition.maxLength ?? sourceDefinition.MaxLength ?? compatible.maxLength),
+			precision: parseNumber(sourceDefinition.precision ?? sourceDefinition.Precision ?? compatible.precision),
+			choiceValues: normaliseString(compatible.choiceValues),
+			lookupTarget: target,
+			relationshipSchemaName: normaliseString(lookupHint.relationshipSchemaName ?? sourceDefinition.relationshipSchemaName),
+			origin: 'DvqrRich',
+			sourceIsValidForCreate: typeof sourceDefinition.isValidForCreate === 'boolean' ? sourceDefinition.isValidForCreate : undefined,
+			sourceIsValidForUpdate: typeof sourceDefinition.isValidForUpdate === 'boolean' ? sourceDefinition.isValidForUpdate : undefined,
+			sourceAttributeOf: normaliseString(sourceDefinition.attributeOf),
+			sourceProviderId: normaliseString(candidate.providerId),
+			sourceFindingId: normaliseString(candidate.findingId),
+			sourceReason: normaliseString(candidate.reason),
+			sourceEnvironmentLabel: normaliseString(candidate.sourceEnvironmentLabel ?? root.sourceEnvironmentLabel),
+			targetEnvironmentLabel: normaliseString(candidate.targetEnvironmentLabel ?? root.targetEnvironmentLabel),
+			reconstructionSupportLevel: normaliseString(support.level)
+		});
+	});
+}
+
 function buildJsonContent(drafts: AttributeDefinitionDraft[]): string {
 	const payload = drafts.length ? drafts : [
 		createDraft({ tableLogicalName: 'account', displayName: 'External ID', schemaName: 'new_externalid', type: 'Text', required: 'None', maxLength: 100, description: 'External system identifier' }),
@@ -116,6 +252,11 @@ function buildJsonContent(drafts: AttributeDefinitionDraft[]): string {
 
 function importJson(content: string): AttributeDefinitionDraft[] {
 	const parsed = JSON.parse(content) as unknown;
+	const root = asRecord(parsed);
+	const richDrafts = importDvqrRichJson(root);
+	if (richDrafts.length) {
+		return richDrafts;
+	}
 	const rows = Array.isArray(parsed) ? parsed : [];
 	return rows.map(row => {
 		const item = row && typeof row === 'object' ? row as Record<string, unknown> : {};
@@ -123,19 +264,20 @@ function importJson(content: string): AttributeDefinitionDraft[] {
 			tableLogicalName: normaliseString(item.tableLogicalName ?? item.table),
 			displayName: normaliseString(item.displayName),
 			schemaName: normaliseString(item.schemaName),
-			type: (normaliseString(item.type) || 'Text') as AttributeDataType,
-			required: (normaliseString(item.required) || 'None') as RequirementLevel,
+			type: toAttributeDataType(item.type),
+			required: normaliseRequired(item.required),
 			description: normaliseString(item.description),
 			maxLength: parseNumber(item.maxLength),
 			precision: parseNumber(item.precision),
 			choiceValues: normaliseString(item.choiceValues),
 			lookupTarget: normaliseString(item.lookupTarget),
+			origin: 'FlatImport'
 		});
 	});
 }
 
-function toAttributeKey(tableLogicalName: string, schemaName: string): string {
-	return `${tableLogicalName.trim().toLowerCase()}::${schemaName.trim().toLowerCase()}`;
+function toAttributeKey(tableLogicalName: string, attributeLogicalName: string): string {
+	return `${tableLogicalName.trim().toLowerCase()}::${attributeLogicalName.trim().toLowerCase()}`;
 }
 
 function updateValidation(state: ReturnType<typeof createInitialAttributeFactoryState>): void {
@@ -205,6 +347,7 @@ function importCsv(content: string): AttributeDefinitionDraft[] {
 			precision: parseNumber(row.get('precision')),
 			choiceValues: row.get('choicevalues') ?? '',
 			lookupTarget: row.get('lookuptarget') ?? '',
+			origin: 'FlatImport'
 		});
 	});
 }
@@ -232,16 +375,17 @@ export async function openAttributeFactoryCommand(context: vscode.ExtensionConte
 		for (const draft of state.drafts) {
 			const table = draft.tableLogicalName.trim();
 			const schema = draft.schemaName.trim();
-			if (!table || !schema) {
+			const logicalName = (draft.logicalName || draft.schemaName).trim();
+			if (!table || !logicalName) {
 				continue;
 			}
-			const key = toAttributeKey(table, schema);
+			const key = toAttributeKey(table, logicalName);
 			if (checkedKeys.has(key)) {
 				continue;
 			}
 			checkedKeys.add(key);
 			try {
-				if (await metadataClient.attributeExists(table, schema)) {
+				if (await metadataClient.attributeExists(table, logicalName)) {
 					existingKeys.push(key);
 				}
 			} catch {
@@ -374,7 +518,7 @@ async function importJsonFromFile(): Promise<void> {
 			.filter(draft => !draftsToCreate.some(item => item.id === draft.id))
 			.map(draft => {
 				const draftIssues = state.validationIssues.filter(issue => issue.draftId === draft.id);
-				const reason = draftIssues.find(issue => issue.message.includes('Unsupported in v1.0.0'))?.message
+				const reason = draftIssues.find(issue => issue.message.includes('unsupported') || issue.message.includes('requires DVQR-rich'))?.message
 					?? draftIssues.find(issue => issue.message.includes('already exists'))?.message
 					?? 'Skipped by validation.';
 				return { draftId: draft.id, schemaName: draft.schemaName, status: 'Skipped' as const, message: reason };
@@ -477,5 +621,4 @@ async function importJsonFromFile(): Promise<void> {
 	});
 
 	render();
-	void connect(false);
 }
